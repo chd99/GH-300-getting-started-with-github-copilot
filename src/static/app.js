@@ -1,86 +1,119 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const activitiesList = document.getElementById("activities-list");
-  const activitySelect = document.getElementById("activity");
-  const signupForm = document.getElementById("signup-form");
+  const exerciseList = document.getElementById("exercise-list");
+  const exerciseForm = document.getElementById("exercise-form");
   const messageDiv = document.getElementById("message");
+  const workoutCount = document.getElementById("workout-count");
+  const avgDuration = document.getElementById("avg-duration");
+  const totalCalories = document.getElementById("total-calories");
+  const totalWorkoutMinutes = document.getElementById("total-workout-minutes");
+  const refreshButton = document.getElementById("refresh-button");
 
-  // Function to fetch activities from API
-  async function fetchActivities() {
-    try {
-      const response = await fetch("/activities");
-      const activities = await response.json();
+  function showMessage(text, type = "success") {
+    messageDiv.textContent = text;
+    messageDiv.className = type;
+    messageDiv.classList.remove("hidden");
 
-      // Clear loading message
-      activitiesList.innerHTML = "";
+    window.setTimeout(() => {
+      messageDiv.classList.add("hidden");
+    }, 4000);
+  }
 
-      // Populate activities list
-      Object.entries(activities).forEach(([name, details]) => {
-        const activityCard = document.createElement("div");
-        activityCard.className = "activity-card";
+  function renderSummary(exercises) {
+    const count = exercises.length;
+    const totalMinutes = exercises.reduce((sum, entry) => sum + Number(entry.duration_minutes || 0), 0);
+    const totalCaloriesBurned = exercises.reduce((sum, entry) => sum + Number(entry.calories_burned || 0), 0);
+    const averageDuration = count ? Math.round(totalMinutes / count) : 0;
 
-        const spotsLeft = details.max_participants - details.participants.length;
+    workoutCount.textContent = String(count);
+    avgDuration.textContent = `${averageDuration} min`;
+    totalCalories.textContent = String(totalCaloriesBurned);
+    totalWorkoutMinutes.textContent = String(totalMinutes);
+  }
 
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+  function renderExercises(exercises) {
+    if (!exercises.length) {
+      exerciseList.innerHTML = "<p class='empty-state'>No workouts logged yet. Add your first training session.</p>";
+      return;
+    }
+
+    const sortedExercises = [...exercises].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    exerciseList.innerHTML = sortedExercises
+      .map((entry) => {
+        const distance = entry.distance_km != null ? `${entry.distance_km} km` : "—";
+        const calories = entry.calories_burned != null ? `${entry.calories_burned} kcal` : "—";
+
+        return `
+          <article class="exercise-card">
+            <div class="exercise-header">
+              <div>
+                <p class="exercise-date">${entry.date}</p>
+                <h3>${entry.sport}</h3>
+              </div>
+              <span class="intensity intensity-${entry.intensity.toLowerCase()}">${entry.intensity}</span>
+            </div>
+            <div class="exercise-meta">
+              <span>${entry.duration_minutes} min</span>
+              <span>${distance}</span>
+              <span>${calories}</span>
+            </div>
+            <p class="exercise-notes">${entry.notes || "No notes added."}</p>
+          </article>
         `;
+      })
+      .join("");
+  }
 
-        activitiesList.appendChild(activityCard);
-
-        // Add option to select dropdown
-        const option = document.createElement("option");
-        option.value = name;
-        option.textContent = name;
-        activitySelect.appendChild(option);
-      });
+  async function fetchExercises() {
+    try {
+      const response = await fetch("/exercises");
+      const exercises = await response.json();
+      renderSummary(exercises);
+      renderExercises(exercises);
     } catch (error) {
-      activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
-      console.error("Error fetching activities:", error);
+      exerciseList.innerHTML = "<p class='empty-state'>Unable to load workouts right now.</p>";
+      console.error("Error fetching exercises:", error);
     }
   }
 
-  // Handle form submission
-  signupForm.addEventListener("submit", async (event) => {
+  exerciseForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const email = document.getElementById("email").value;
-    const activity = document.getElementById("activity").value;
+    const payload = {
+      date: document.getElementById("date").value,
+      sport: document.getElementById("sport").value.trim(),
+      duration_minutes: Number(document.getElementById("duration").value),
+      distance_km: document.getElementById("distance").value ? Number(document.getElementById("distance").value) : null,
+      calories_burned: document.getElementById("calories").value ? Number(document.getElementById("calories").value) : null,
+      intensity: document.getElementById("intensity").value,
+      notes: document.getElementById("notes").value.trim(),
+    };
 
     try {
-      const response = await fetch(
-        `/activities/${encodeURIComponent(activity)}/signup?email=${encodeURIComponent(email)}`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await fetch("/exercises", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       const result = await response.json();
 
-      if (response.ok) {
-        messageDiv.textContent = result.message;
-        messageDiv.className = "success";
-        signupForm.reset();
-      } else {
-        messageDiv.textContent = result.detail || "An error occurred";
-        messageDiv.className = "error";
+      if (!response.ok) {
+        throw new Error(result.detail || "Could not save workout.");
       }
 
-      messageDiv.classList.remove("hidden");
-
-      // Hide message after 5 seconds
-      setTimeout(() => {
-        messageDiv.classList.add("hidden");
-      }, 5000);
+      exerciseForm.reset();
+      document.getElementById("intensity").value = "Moderate";
+      showMessage(`${payload.sport} saved successfully!`, "success");
+      await fetchExercises();
     } catch (error) {
-      messageDiv.textContent = "Failed to sign up. Please try again.";
-      messageDiv.className = "error";
-      messageDiv.classList.remove("hidden");
-      console.error("Error signing up:", error);
+      showMessage(error.message || "Failed to save workout.", "error");
+      console.error("Error saving exercise:", error);
     }
   });
 
-  // Initialize app
-  fetchActivities();
+  refreshButton.addEventListener("click", fetchExercises);
+
+  document.getElementById("date").valueAsDate = new Date();
+  fetchExercises();
 });

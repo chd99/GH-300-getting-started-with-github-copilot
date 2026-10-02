@@ -3,47 +3,94 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mergington High School Activities</title>
+    <title>Sport Exercise Dashboard</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header>
-      <h1>Mergington High School</h1>
-      <h2>Extracurricular Activities</h2>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Daily fitness tracker</p>
+        <h1>Sport Exercise Dashboard</h1>
+      </div>
+      <div class="summary-badge">
+        <span id="total-workout-minutes">0</span>
+        <small>minutes this week</small>
+      </div>
     </header>
 
-    <main>
-      <section id="activities-container">
-        <h3>Available Activities</h3>
-        <div id="activities-list">
-          <!-- Activities will be loaded here -->
-          <p>Loading activities...</p>
+    <main class="dashboard">
+      <section class="panel overview-panel">
+        <h2>Overview</h2>
+        <div class="stats-grid">
+          <article class="stat-card accent">
+            <span class="stat-label">Total workouts</span>
+            <strong id="workout-count">0</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">Average duration</span>
+            <strong id="avg-duration">0 min</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">Calories</span>
+            <strong id="total-calories">0</strong>
+          </article>
         </div>
       </section>
 
-      <section id="signup-container">
-        <h3>Sign Up for an Activity</h3>
-        <form id="signup-form">
-          <div class="form-group">
-            <label for="email">Student Email:</label>
-            <input type="email" id="email" required placeholder="your-email@mergington.edu" />
+      <section class="panel exercise-panel">
+        <div class="section-header">
+          <h2>Daily exercise log</h2>
+          <button id="refresh-button" type="button" class="secondary-button">Refresh</button>
+        </div>
+        <div id="exercise-list" class="exercise-list">
+          <p class="empty-state">Loading workouts...</p>
+        </div>
+      </section>
+
+      <section class="panel form-panel">
+        <h2>Add workout</h2>
+        <form id="exercise-form">
+          <div class="form-row">
+            <label for="date">Date</label>
+            <input type="date" id="date" required />
           </div>
-          <div class="form-group">
-            <label for="activity">Select Activity:</label>
-            <select id="activity" required>
-              <option value="">-- Select an activity --</option>
-              <!-- Activity options will be loaded here -->
-            </select>
+          <div class="form-row">
+            <label for="sport">Sport</label>
+            <input type="text" id="sport" placeholder="Running" required />
           </div>
-          <button type="submit">Sign Up</button>
+          <div class="form-row two-column">
+            <div>
+              <label for="duration">Duration (min)</label>
+              <input type="number" id="duration" min="1" required />
+            </div>
+            <div>
+              <label for="intensity">Intensity</label>
+              <select id="intensity">
+                <option>Low</option>
+                <option selected>Moderate</option>
+                <option>High</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row two-column">
+            <div>
+              <label for="distance">Distance (km)</label>
+              <input type="number" id="distance" min="0" step="0.1" placeholder="0.0" />
+            </div>
+            <div>
+              <label for="calories">Calories</label>
+              <input type="number" id="calories" min="0" placeholder="0" />
+            </div>
+          </div>
+          <div class="form-row">
+            <label for="notes">Notes</label>
+            <textarea id="notes" rows="3" placeholder="Felt strong during the final interval."></textarea>
+          </div>
+          <button type="submit">Save workout</button>
         </form>
         <div id="message" class="hidden"></div>
       </section>
     </main>
-
-    <footer>
-      <p>&copy; 2023 Mergington High School</p>
-    </footer>
 
     <script src="app.js"></script>
   </body>
